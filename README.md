@@ -77,9 +77,31 @@ Enabling Jenkins Screenshots
 
 Jenkins screenshot attachments can be written to the report to allow for a screenshot attachment in each test failure. Simply specify a reporterOption of `spec` or `loop`. This writes a `system-out` xml element to the JUnit report, leveraging the `Publish test attachments` feature of the `JUnit Attachments Plugin`.
 
-`spec` will write the full path of the screenshot with a filename consisting of "suitename+classname+test.title+extension". `loop` pulls and sorts all screenshots with specific filename text from `JUNIT_REPORT_PATH` and writes them in order according to the names of the files pulled. The `imagestring` reporterOption can be used to specify what files to pull, otherwise it defaults to the test suite name.
+`spec` will write the full path of the screenshot with a filename consisting of "suitename+classname+test.title+extension". `loop` pulls and sorts all screenshots with specific filename text from `JUNIT_REPORT_PATH` and writes them in order according to the names of the files pulled. The `imagestring` reporterOption can be used to specify what files to pull, allowing for custom screenshot naming conventions on the mocha side, otherwise it defaults to the test suite name.
 
 Screenshot extension defaults to ".png", but can also be passed in with the `imagetype` reporterOption.
+
+Here is an example of generating a screenshot in Mocha for using the `spec` option. Note that whatever is in the `describe` statement is what mocha-jenkins-reporter sees with `currentSuite.suite.fullTitle()`. Let us call that `suitename`. Let's call `classname` what the reporter sees with `getClassName(test, currentSuite.suite)`.  Finally, let's call `title` what you can extract on the Mocha side with `this.currentTest.title`. In this example I'm assuming that JUNIT_REPORT_PATH ends with '/'.
+```
+var screenshot = process.env.JUNIT_REPORT_PATH + suitename + classname + title + '.png';
+client.saveScreenshot(screenshot);
+```
+Here is the Mocha call for running a test that leverages this option:
+```
+mocha screenshot_test.js --reporter mocha-jenkins-reporter --reporter-options screenshots=spec
+```
+The `loop` option can be used in situations where you may have multiple XML reports and would perhaps prefer to timestamp screenshots then write them in order to the XML report. Here is an example of generating a screenshot using `loop`:
+```
+var d = new Date(),
+    n = d.getTime().toString(),
+    customScreenshotText = "mycustomscreenshots",
+    screenshot = process.env.JUNIT_REPORT_PATH + n + "_" + customScreenshotText + ".png";
+client.saveScreenshot(screenshot);
+```
+Here is the Mocha call that allows you to loop through the screenshots and write to the report all that contain `customScreenshotText`:
+```
+mocha screenshot_test.js --reporter mocha-jenkins-reporter --reporter-options screenshots=loop,imagestring=mycustomscreenshots
+```
 
 SonarQube Integration
 ---------------------
